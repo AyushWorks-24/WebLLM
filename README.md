@@ -1,129 +1,68 @@
-**🌐 WebLLM — Run LLMs Directly in Your Browser with WebGPU**
+# 🌐 CampusGenie: Browser-Native AI (WebGPU)
 
-<p align="center"> <img src="https://img.shields.io/badge/WebGPU-Enabled-blue" /> <img src="https://img.shields.io/badge/AI-Local%20Inference-brightgreen" /> <img src="https://img.shields.io/badge/License-MIT-orange" /> </p>
+> **Zero-Server, 100% Private, Edge-AI Chatbot running directly in your browser.**
 
-WebLLM is a lightweight, privacy-focused project that lets you run modern Large Language Models entirely inside your browser — powered by WebGPU.
-No backend. No API keys. No server cost.
-Everything runs locally on your device. ⚡
+This module demonstrates the power of **Edge Computing** by running a **1 Billion Parameter LLM (Llama-3.2-1B)** entirely inside the user's web browser using **WebGPU**. No Python backend or cloud API is required for this version.
 
-🚀 Key Highlights
+---
 
-⚡ 100% Client-Side Inference
+## ✨ Features
 
-🔒 Zero Data Upload — Full Privacy
+- **🚀 Serverless Architecture:** The model runs inside the browser (Client-side).
+- **🔒 100% Privacy:** Your documents and queries never leave your device.
+- **⚡ Hardware Accelerated:** Uses **WebGPU** to leverage your local GPU directly via JavaScript.
+- **📄 RAG Support:** Upload any text file (`.txt`) and chat with it instantly.
+- **💾 Offline Capable:** Once the model caches, it works without internet.
 
-🧠 Runs LLaMA, Gemma, Mistral, Phi, and more
+---
 
-💻 WebGPU acceleration → Fast inference
+## 🛠️ Tech Stack
 
-📦 Simple API for chat & text generation
+- **Model:** Llama-3.2-1B-Instruct-q4f16_1 (Quantized for Web)
+- **Engine:** [MLC-LLM](https://mlc.ai/mlc-llm/) (Machine Learning Compilation)
+- **Interface:** HTML5, CSS3, Vanilla JavaScript
+- **Acceleration:** WebGPU API
 
-🌐 Works on Chrome, Edge, Brave (WebGPU-enabled)
+---
 
-📸 Demo Preview
+## 🚀 How to Run (Setup Guide)
 
-(Add a screenshot or GIF here for a polished look)
-Example:
+### Prerequisites
+- A modern browser with **WebGPU Support** (Chrome 113+, Edge 113+).
+- *Note: Firefox and Safari currently have experimental support only.*
 
-/public/demo.png
+### Steps:
+1.  Navigate to the `Frontend` folder.
+2.  You cannot open the HTML file directly (due to browser security policies). You need a local server.
+3.  **Using VS Code:**
+    - Install **"Live Server"** extension.
+    - Right-click on `index.html`.
+    - Select **"Open with Live Server"**.
+4.  **Using Python:**
+    ```bash
+    python -m http.server 8080
+    ```
+    Then open `http://localhost:8080` in Chrome.
 
-📁 Project Structure
-WebLLM/
-│── src/
-│   ├── components/    # UI components
-│   ├── models/        # Model loaders & config
-│   └── utils/         # Helper functions
-│── public/            # Static assets + model files
-│── package.json
-│── vite.config.js
-└── README.md
+---
 
-⚙️ Installation
-Clone the repository
-git clone https://github.com/AyushWorks-24/WebLLM
-cd WebLLM
+## 📂 File Structure
 
-Install dependencies
-npm install
+- **`index.html`**: The landing page with options to choose Basic or RAG mode.
+- **`doc_chat.html`**: The main interface for **Document Chat (RAG)**. Allows file upload and context-aware chatting.
 
-Start development server
-npm run dev
+---
 
+## ⚠️ Troubleshooting
 
-Now open the link shown in the terminal (usually: http://localhost:5173/).
+**1. "WebGPU is not supported" Error:**
+- Update your browser (Chrome/Edge) to the latest version.
+- Ensure your Graphic Drivers are updated.
+- If using Linux, you might need to enable specific flags in `chrome://flags`.
 
-🤖 Using WebLLM in Your Project
+**2. Stuck at "Loading Model":**
+- The first run downloads ~800MB of model weights. It depends on your internet speed.
+- Open Browser Console (`F12`) to see the download progress percentage.
 
-Example of loading a model and generating text:
+---
 
-import { CreateWebLLMChat } from "@mlc-ai/web-llm";
-
-async function run() {
-  const chat = await CreateWebLLMChat("Llama-3-8B");
-  const output = await chat.generate("Hello WebLLM!");
-  console.log(output);
-}
-
-run();
-
-🌟 Supported Models
-
-WebLLM supports a wide range of models:
-
-LLaMA 3
-
-Mistral
-
-Gemma
-
-Phi-2 / Phi-3
-
-Qwen
-
-And more depending on browser memory limits.
-
-🛠️ Browser Requirements
-
-To run LLMs locally:
-
-✔ Chrome 113+ / Edge 113+
-
-✔ WebGPU enabled
-
-✔ Good GPU recommended (but not mandatory)
-
-Check if WebGPU works:
-
-chrome://flags → search “WebGPU” → Enable
-
-📌 Roadmap
-
- UI redesign
-
- Multi-model selector
-
- Offline model caching
-
- Voice input (Speech-to-Text)
-
- Chat history + export
-
- Dark / Light theme switch
-
-🤝 Contributing
-
-Contributions are welcome!
-If you have ideas or improvements, feel free to:
-
-Open an Issue
-
-Create a Pull Request
-
-📄 License
-
-This project is licensed under the MIT License.
-
-👤 Author
-
-AyushWorks-24
-GitHub: https://github.com/AyushWorks-24
