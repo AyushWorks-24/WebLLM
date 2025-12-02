@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Local WebLLM Chatbot (With Memory)</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f0f2f5; }
+        #chat-box { 
+            height: 400px; overflow-y: auto; border: 1px solid #ccc; 
+            background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .message { margin-bottom: 15px; padding: 10px; border-radius: 5px; }
+        .user { background-color: #dcf8c6; text-align: right; margin-left: 20%; }
+        .ai { background-color: #e8e8e8; text-align: left; margin-right: 20%; }
+        #input-area { display: flex; gap: 10px; }
+        input { flex-grow: 1; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:disabled { background: #ccc; }
+        #status { font-size: 0.9em; color: #666; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>🤖 WebLLM Chatbot (Memory Enabled)</h1>
+    <div id="status">Initializing WebGPU...</div>
+    
+    <div id="chat-box">
+        </div>
+
+    <div id="input-area">
+        <input type="text" id="user-input" placeholder="Type a message..." disabled>
+        <button id="send-btn" disabled>Send</button>
+    </div>
+
+    <script type="module">
+        import { CreateMLCEngine } from "https://esm.run/@mlc-ai/web-llm";
+
+        const SELECTED_MODEL = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
+
+        const statusLabel = document.getElementById('status');
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        let engine;
+        
+        
+        let chatHistory = []; 
+
+        async function main() {
+            try {
+                statusLabel.innerText = "⏳ Loading Engine & Downloading Model (approx 1GB)... Please wait.";
+                
+                engine = await CreateMLCEngine(SELECTED_MODEL, {
+                    initProgressCallback: (progress) => {
+                        statusLabel.innerText = `⏳ Loading: ${Math.ceil(progress.text.includes("Loading") ? progress.progress * 100 : 0)}% - ${progress.text}`;
+                    }
+                });
+
+                statusLabel.innerText = "✅ Model Loaded! You can chat now.";
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.focus();
+
+            } catch (err) {
+                statusLabel.innerText = "❌ Error: " + err.message;
+                console.error(err);
+            }
+        }
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            
+            appendMessage(text, 'user');
+            userInput.value = '';
+            userInput.disabled = true;
+
+           
+            chatHistory.push({ role: "user", content: text });
+
+            const aiMessageDiv = appendMessage("Thinking...", 'ai');
+
+            
+            const messagesPayload = [
+                { role: "system", content: "You are a helpful and smart AI assistant." },
+                ...chatHistory
+            ];
+
+            const chunks = await engine.chat.completions.create({
+                messages: messagesPayload,
+                stream: true,
+            });
+
+            let fullResponse = "";
+            aiMessageDiv.innerText = ""; 
+
+            for await (const chunk of chunks) {
+                const content = chunk.choices[0]?.delta?.content || "";
+                fullResponse += content;
+                aiMessageDiv.innerText = fullResponse;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
+            
+            chatHistory.push({ role: "assistant", content: fullResponse });
+
+            userInput.disabled = false;
+            userInput.focus();
+        }
+
+        function appendMessage(text, sender) {
+            const div = document.createElement('div');
+            div.classList.add('message', sender);
+            div.innerText = text;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return div;
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
+
+        main();
+    </script>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with Document (RAG Lite)</title>
+    <style>
+        body { font-family: sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; background: #f4f7f6; }
+        .container { display: flex; gap: 20px; }
+        
+       
+        .sidebar { width: 30%; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); height: fit-content; }
+        
+      
+        .main-chat { width: 70%; }
+        #chat-box { 
+            height: 450px; overflow-y: auto; border: 1px solid #ccc; 
+            background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .message { margin-bottom: 15px; padding: 10px; border-radius: 8px; line-height: 1.5; }
+        .user { background-color: #dcf8c6; text-align: right; margin-left: 20%; }
+        .ai { background-color: #e8e8e8; text-alig  n: left; margin-right: 20%; }
+        .system-msg { background-color: #fff3cd; text-align: center; font-size: 0.8em; color: #856404; }
+        
+        #input-area { display: flex; gap: 10px; }
+        input[type="text"] { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:disabled { background: #ccc; }
+        
+        .file-status { font-size: 0.9em; margin-top: 10px; color: green; font-weight: bold; display: none; }
+    </style>
+</head>
+<body>
+
+    <h1>📄 Chat with Your Document (Local AI)</h1>
+    <p id="engine-status" style="color: #666;">Initializing Engine...</p>
+
+    <div class="container">
+        <div class="sidebar">
+            <h3>1. Upload Data</h3>
+            <p>Select a text file (.txt) to teach the AI.</p>
+            <input type="file" id="file-input" accept=".txt">
+            <div id="file-status" class="file-status">✅ Document Loaded into Memory!</div>
+            <p style="font-size: 0.8em; color: #555; margin-top: 10px;">
+                Note: Since this runs in browser, try to keep files under 10,000 words for speed.
+            </p>
+        </div>
+
+        <div class="main-chat">
+            <div id="chat-box"></div>
+            <div id="input-area">
+                <input type="text" id="user-input" placeholder="Ask something about the document..." disabled>
+                <button id="send-btn" disabled>Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { CreateMLCEngine } from "https://esm.run/@mlc-ai/web-llm";
+
+        const SELECTED_MODEL = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
+        
+        
+        const statusLabel = document.getElementById('engine-status');
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const fileInput = document.getElementById('file-input');
+        const fileStatus = document.getElementById('file-status');
+
+        let engine;
+        let chatHistory = [];
+        let documentContext = ""; 
+
+        
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                documentContext = e.target.result; 
+                fileStatus.style.display = 'block';
+                appendMessage(`System: Loaded document "${file.name}". You can now ask questions about it.`, 'system-msg');
+            };
+            reader.readAsText(file);
+        });
+
+       
+        async function main() {
+            try {
+                
+                statusLabel.innerHTML = "🚀 <b>Starting Engine...</b> checking GPU & Cache.";
+                
+                engine = await CreateMLCEngine(SELECTED_MODEL, {
+                    initProgressCallback: (progress) => {
+                        
+                        const p = Math.ceil(progress.progress * 100);
+                        
+                        
+                        if (progress.text.includes("Downloading")) {
+                            statusLabel.innerHTML = `☁️ <b>Downloading Model:</b> ${p}% <br><span style='font-size:0.8em; color:gray'>(यह सिर्फ पहली बार होगा, इंटरनेट स्पीड पर निर्भर है)</span>`;
+                        } else if (progress.text.includes("Loading model from cache")) {
+                            statusLabel.innerHTML = `📂 <b>Loading from Disk:</b> ${p}% <br><span style='font-size:0.8em; color:gray'>(Fast Load)</span>`;
+                        } else {
+                            statusLabel.innerHTML = `⚙️ <b>GPU Tasks:</b> ${progress.text}`;
+                        }
+                    }
+                });
+
+                statusLabel.innerHTML = "✅ <b>AI Ready!</b> Upload a file or start chatting.";
+                statusLabel.style.color = "green";
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.placeholder = "Ask something about the document...";
+                userInput.focus();
+
+            } catch (err) {
+                statusLabel.innerHTML = `<span style='color:red'>❌ Error: ${err.message}</span>`;
+                console.error(err);
+            }
+        }
+
+        
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            appendMessage(text, 'user');
+            userInput.value = '';
+            userInput.disabled = true;
+            chatHistory.push({ role: "user", content: text });
+
+            const aiMessageDiv = appendMessage("Reading...", 'ai');
+
+            
+            let systemInstruction = "You are a helpful assistant.";
+            
+            
+            if (documentContext) {
+                systemInstruction = `
+                    You are an intelligent document assistant. 
+                    Use the following CONTEXT to answer the user's question.
+                    If the answer is not in the context, say "I don't know based on the document."
+                    
+                    CONTEXT:
+                    """
+                    ${documentContext}
+                    """
+                `;
+            }
+
+           
+            const messagesPayload = [
+                { role: "system", content: systemInstruction },
+                ...chatHistory
+            ];
+
+            
+            const chunks = await engine.chat.completions.create({
+                messages: messagesPayload,
+                stream: true,
+            });
+
+            let fullResponse = "";
+            aiMessageDiv.innerText = ""; 
+
+            for await (const chunk of chunks) {
+                const content = chunk.choices[0]?.delta?.content || "";
+                fullResponse += content;
+                aiMessageDiv.innerText = fullResponse;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
+            chatHistory.push({ role: "assistant", content: fullResponse });
+            userInput.disabled = false;
+            userInput.focus();
+        }
+
+        function appendMessage(text, sender) {
+            const div = document.createElement('div');
+            div.classList.add('message', sender);
+            div.innerText = text;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return div;
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
+
+        main();
+    </script>
+</body>
+</html>
