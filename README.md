@@ -3,6 +3,10 @@
 > **Zero-Server, 100% Private, Edge-AI Chatbot running directly in your browser.**
 
 This module demonstrates the power of **Edge Computing** by running a **1 Billion Parameter LLM (Llama-3.2-1B)** entirely inside the user's web browser using **WebGPU**. No Python backend or cloud API is required for this version.
+## 🎓 CampusGenie - Intelligent Offline College Assistant
+
+### 🚀 [Click Here to Try Browser Demo][(https://ayushworks-24.github.io/WebLLM/)] 
+
 
 ---
 
