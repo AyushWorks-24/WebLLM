@@ -1,4 +1,4 @@
-# 🌐 CampusGenie: Browser-Native AI (WebGPU)
+### 🌐 CampusGenie: Browser-Native AI (WebGPU)
 
 > **Zero-Server, 100% Private, Edge-AI Chatbot running directly in your browser.**
 
